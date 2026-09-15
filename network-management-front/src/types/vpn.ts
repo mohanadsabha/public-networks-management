@@ -1,0 +1,1 @@
+export type VpnStatus = "DISCONNECTED" | "CONNECTING" | "CONNECTED" | "RECONNECTING" | "ERROR";

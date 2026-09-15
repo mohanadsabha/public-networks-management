@@ -1,0 +1,1 @@
+export const STATISTICS_RECENT_PAGE_SIZE = 8;

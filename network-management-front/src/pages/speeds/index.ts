@@ -1,0 +1,1 @@
+export { SpeedsPage } from "./SpeedsPage";
