@@ -81,8 +81,24 @@ if (process.env.VPN_ENABLED === "true") {
 // syncUsage handles its own connection errors (API → SSH fallback).
 const syncIntervalMs = Number(process.env.syncTime ?? 5) * 60 * 1000;
 console.log(`📊 Usage sync started — interval: ${process.env.syncTime}m`);
-syncUsage(); // first sync immediately on boot
-setInterval(syncUsage, syncIntervalMs);
+let usageSyncInProgress = false;
+const runUsageSync = async () => {
+  if (usageSyncInProgress) {
+    console.warn("[UsageSync] Previous run is still in progress; skipping this interval");
+    return;
+  }
+
+  usageSyncInProgress = true;
+  try {
+    await syncUsage();
+  } catch (error) {
+    console.error("[UsageSync] Run failed; it will retry on the next interval:", error);
+  } finally {
+    usageSyncInProgress = false;
+  }
+};
+void runUsageSync();
+setInterval(() => void runUsageSync(), syncIntervalMs);
 
 const app = express();
 app.set("trust proxy", 1);

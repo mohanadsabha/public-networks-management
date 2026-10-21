@@ -88,7 +88,6 @@ const sendErrorDev = (err: Error, res: Response): void => {
       stack: err.stack,
     });
   } else {
-    console.error("ERROR 💥", err);
     res.status(500).json({
       status: "error",
       message: err.message,

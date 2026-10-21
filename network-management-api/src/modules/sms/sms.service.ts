@@ -262,7 +262,6 @@ export async function sendSms(input: SendSmsInput, sentByUserId: number) {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : String(err ?? "Unknown error");
-      console.warn(`[SMS] Failed to send to ${recipient.phone}: ${errorMessage}`);
       await insertSmsLog({
         sentByUserId,
         subscriberId: recipient.subscriberId,

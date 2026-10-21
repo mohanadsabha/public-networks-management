@@ -325,7 +325,6 @@ export const getOnlineUser = async (username: string) => {
         config.password,
         `/ppp active print detail without-paging where name="${username}"`
       );
-      console.log("SSH output for user", username, sshOutput);
       const rows = parsePppActiveDetail(sshOutput);
       const now = new Date().toISOString();
 

@@ -52,7 +52,6 @@ function connectMikroTikSSH(command: string): Promise<string> {
       done(err);
     });
 
-    console.log(`🔌 Connecting SSH to ${process.env.MIKROTIK_HOST}:${process.env.MIKROTIK_SSH_PORT}...`);
     conn.connect({
       host: process.env.MIKROTIK_HOST!,
       port: Number(process.env.MIKROTIK_SSH_PORT),
@@ -130,11 +129,7 @@ export async function syncUsage() {
         },
       ];
     });
-
-    console.log(`syncUsage: API fetched ${pppoeQueues.length} queues`);
   } catch (apiErr) {
-    console.warn("syncUsage: API failed, falling back to SSH");
-
     // SSH fallback
     try {
       const raw = await connectMikroTikSSH('/queue simple print stats where name~"<pppoe"');
@@ -203,6 +198,4 @@ export async function syncUsage() {
       })
     );
   });
-
-  console.log(`syncUsage: updated ${toUpdate.length} users`);
 }

@@ -108,13 +108,7 @@ class VpnManager extends EventEmitter {
       {},
     );
 
-    // if (process.env.NODE_ENV === "development") {
-    this.ovpnProcess.stdout?.on("data", (d) => console.log("STDOUT:", d.toString()));
-    this.ovpnProcess.stderr?.on("data", (d) => console.log("STDERR:", d.toString()));
-    // }
-
     this.ovpnProcess.on("close", (code) => {
-      console.log(`OpenVPN exited with code: ${code}`);
       // Only auto-reconnect when VPN is intentionally enabled.
       // If disable() was called, _enabled is already false so we skip the reconnect.
       if (this._enabled) {
