@@ -27,12 +27,13 @@ export function useAllSpeedPoolCounts(speedTiers: SpeedTier[], enabled = true) {
 
     speedIds.forEach((speedId, index) => {
       const rows = queries[index]?.data ?? [];
-      const counts = getSpeedPoolCounts(rows, speedId);
+      const speedMbps = speedTiers.find((tier) => tier.id === speedId)?.valueMbps;
+      const counts = getSpeedPoolCounts(rows, speedId, speedMbps);
       map.set(speedId, { total: counts.total, available: counts.new });
     });
 
     return map;
-  }, [queries, speedIds]);
+  }, [queries, speedIds, speedTiers]);
 
   const isLoading = queries.some((query) => query.isLoading);
 

@@ -1,5 +1,13 @@
 import { addDays, differenceInCalendarDays, format, isAfter, parseISO, startOfDay } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
+import { supportsSameUsernameRenewalSpeed } from "@/lib/usernameSamePeriodRenewal";
+
+export interface AvailablePoolListOptions {
+  /** Speed tier Mbps for the rows being listed (enables 4/8/16 assigned reuse in admin pool). */
+  speedMbps?: number;
+  /** When true, assigned usernames on reusable speeds stay visible (admin usernames page only). */
+  includeAssignedRenewal?: boolean;
+}
 
 /** Default cooldown after a username is assigned (days). Backend may override per org. */
 export const USERNAME_COOLDOWN_DAYS = 30;
@@ -100,14 +108,27 @@ export function getUsernameLifecycleStatus(
   return "in_cooldown";
 }
 
-/** Rows pickable in the available-usernames pool and username picker modal. */
-export function isInAvailablePool(row: AvailableUsername, now = new Date()): boolean {
+/** Rows in the admin pool list and/or pickable for assignment (see options). */
+export function isInAvailablePool(
+  row: AvailableUsername,
+  now = new Date(),
+  options?: AvailablePoolListOptions,
+): boolean {
   if (row.isExpired) {
     return false;
   }
 
   // Owner usernames stay visible even when assigned to a subscriber.
   if (row.isOwnerUsername) {
+    return true;
+  }
+
+  if (
+    options?.includeAssignedRenewal &&
+    options.speedMbps != null &&
+    row.isUsed &&
+    supportsSameUsernameRenewalSpeed(options.speedMbps)
+  ) {
     return true;
   }
 
@@ -190,9 +211,14 @@ export interface SpeedPoolCounts {
 export function getSpeedPoolCounts(
   rows: AvailableUsername[],
   speedId: number,
+  speedMbps?: number,
   now = new Date(),
 ): SpeedPoolCounts {
-  const list = rows.filter((row) => row.speedId === speedId && isInAvailablePool(row, now));
+  const poolOptions: AvailablePoolListOptions | undefined =
+    speedMbps != null ? { speedMbps, includeAssignedRenewal: true } : undefined;
+  const list = rows.filter(
+    (row) => row.speedId === speedId && isInAvailablePool(row, now, poolOptions),
+  );
 
   return {
     total: list.length,

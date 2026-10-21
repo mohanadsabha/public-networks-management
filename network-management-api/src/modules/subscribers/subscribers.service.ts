@@ -18,6 +18,7 @@ import { addDays, differenceInCalendarDays } from "date-fns";
 import cloudinary from "../../config/cloudinary";
 import { routers } from "../../db/schema/routers";
 import { normalizeRouterPortForDb } from "../../utils/routerPort.util";
+import { supportsSameUsernameRenewalSpeed } from "../usernames/usernameRenewal.util";
 
 type UsernameSnapshot = {
   id: number;
@@ -560,7 +561,7 @@ export async function assignUsernameToSubscriber(
 }
 
 /**
- * Start a new 30-day billing period on the same username (owner / network-owner lines).
+ * Start a new 30-day billing period on the same username (owner lines and 4/8/16 Mbps reusable pool).
  * Keeps the username assigned, records the ended period, creates an invoice, and resets usage counters.
  */
 export async function renewUsernameBillingCycle(
@@ -589,6 +590,19 @@ export async function renewUsernameBillingCycle(
     .limit(1);
 
   if (!usernameRow) throw new AppError("Assigned username not found", 404);
+
+  const [speedTier] = await db
+    .select({ speedValue: speedTiers.speedValue })
+    .from(speedTiers)
+    .where(and(eq(speedTiers.id, usernameRow.speedId), eq(speedTiers.deleted, false)))
+    .limit(1);
+
+  const canRenewSameUsername =
+    usernameRow.isOwnerUsername ||
+    (speedTier != null && supportsSameUsernameRenewalSpeed(speedTier.speedValue));
+  if (!canRenewSameUsername) {
+    throw new AppError("This speed does not support renewing the same username", 400);
+  }
 
   const now = new Date();
   const usageEnd =

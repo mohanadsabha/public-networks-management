@@ -47,6 +47,7 @@ import { buildOnlineIpByUsername, resolveOnlineIp } from "@/lib/onlineUsersUtils
 import { MIKROTIK_FEATURES_ENABLED } from "@/lib/vpnConfig";
 import { buildAccessUrlFromConnection } from "@/lib/subscriberAccessUrl";
 import { formatConnectionHostLabel, resolveSubscriberConnectionHost } from "@/lib/subscriberConnection";
+import { subscriberUsesSameUsernameRenewal } from "@/lib/usernameSamePeriodRenewal";
 
 export function SubscriberProfilePage() {
   const { t } = useTranslation();
@@ -379,7 +380,14 @@ export function SubscriberProfilePage() {
   };
 
   const handleRenewUsername = async () => {
-    if (subscriber?.isOwnerUsername) {
+    const keepSameUsername =
+      subscriber &&
+      subscriberUsesSameUsernameRenewal(
+        subscriber.isOwnerUsername,
+        subscriber.speedMbps ?? poolSpeedMbps,
+      );
+
+    if (keepSameUsername) {
       try {
         await renewUsernameCycleMutation.mutateAsync();
         toast.success(t("subscribers.username.renewOwnerSuccess"));
@@ -408,7 +416,13 @@ export function SubscriberProfilePage() {
   };
 
   const requestRenewUsername = () => {
-    if (subscriber?.isOwnerUsername) {
+    if (
+      subscriber &&
+      subscriberUsesSameUsernameRenewal(
+        subscriber.isOwnerUsername,
+        subscriber.speedMbps ?? poolSpeedMbps,
+      )
+    ) {
       setRenewConfirmOpen(true);
       return;
     }
@@ -575,12 +589,18 @@ export function SubscriberProfilePage() {
         onClose={() => setRenewConfirmOpen(false)}
         onConfirm={handleRenewUsername}
         title={
-          subscriber.isOwnerUsername
+          subscriberUsesSameUsernameRenewal(
+            subscriber.isOwnerUsername,
+            subscriber.speedMbps ?? poolSpeedMbps,
+          )
             ? t("subscribers.username.renewOwnerConfirmTitle")
             : t("subscribers.username.renewConfirmTitle")
         }
         message={
-          subscriber.isOwnerUsername
+          subscriberUsesSameUsernameRenewal(
+            subscriber.isOwnerUsername,
+            subscriber.speedMbps ?? poolSpeedMbps,
+          )
             ? t("subscribers.username.renewOwnerConfirmMessage", {
                 name: subscriber.fullName,
                 username: subscriber.username ?? "—",
@@ -591,13 +611,19 @@ export function SubscriberProfilePage() {
               })
         }
         confirmLabel={
-          subscriber.isOwnerUsername
+          subscriberUsesSameUsernameRenewal(
+            subscriber.isOwnerUsername,
+            subscriber.speedMbps ?? poolSpeedMbps,
+          )
             ? t("subscribers.username.renewOwnerAction")
             : t("subscribers.username.renewUsername")
         }
         cancelLabel={t("common.cancel")}
         isLoading={
-          subscriber.isOwnerUsername
+          subscriberUsesSameUsernameRenewal(
+            subscriber.isOwnerUsername,
+            subscriber.speedMbps ?? poolSpeedMbps,
+          )
             ? renewUsernameCycleMutation.isPending
             : autoAssignUsernameMutation.isPending
         }

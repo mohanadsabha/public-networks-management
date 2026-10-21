@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/buttons";
 import { LtrText, MaskedPasswordCell } from "@/components/ui/data";
 import { AvailableUsernameExpiryLabel } from "@/components/pages/available-usernames/AvailableUsernameExpiryLabel";
 import { AvailableUsernameUsageLabel } from "@/components/pages/available-usernames/AvailableUsernameUsageLabel";
+import { canResetUsernameBillingCycle } from "@/lib/usernameSamePeriodRenewal";
 import { formatCreatedDate, type AvailableUsername } from "@/types/availableUsername";
 import { cn } from "@/lib/cn";
 
@@ -130,6 +131,7 @@ export function AvailableUsernamesTable({
                   <div className="flex justify-center">
                   <RowActions
                     row={row}
+                    speedMbps={speedMbps}
                     onDetails={() => setDetailsRow(row)}
                     onEdit={onEdit}
                     onDelete={onDelete}
@@ -238,6 +240,7 @@ function AvailableUsernamesMobileList({
           <div className="mt-4 flex justify-end border-t border-border pt-3">
             <RowActions
               row={row}
+              speedMbps={speedMbps}
               onDetails={() => onDetails(row)}
               onEdit={onEdit}
               onDelete={onDelete}
@@ -253,6 +256,7 @@ function AvailableUsernamesMobileList({
 
 function RowActions({
   row,
+  speedMbps,
   onDetails,
   onEdit,
   onDelete,
@@ -260,6 +264,7 @@ function RowActions({
   onReset,
 }: {
   row: AvailableUsername;
+  speedMbps: number;
   onDetails: () => void;
   onEdit?: (row: AvailableUsername) => void;
   onDelete?: (row: AvailableUsername) => void;
@@ -267,7 +272,7 @@ function RowActions({
   onReset?: (row: AvailableUsername) => void;
 }) {
   const { t } = useTranslation();
-  const canReset = Boolean(onReset && row.isOwnerUsername && row.isUsed);
+  const canReset = Boolean(onReset && canResetUsernameBillingCycle(row, speedMbps));
 
   return (
     <div className="flex items-center justify-center gap-0.5">

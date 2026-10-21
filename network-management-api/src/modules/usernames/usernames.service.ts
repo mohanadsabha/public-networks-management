@@ -7,6 +7,7 @@ import AppError from "../../utils/appError";
 import { normalizeUsername } from "../../utils/excelCell.util";
 import type { ParsedImportRow } from "./usernames.excel";
 import { renewUsernameBillingCycle } from "../subscribers/subscribers.service";
+import { supportsSameUsernameRenewalSpeed } from "./usernameRenewal.util";
 
 async function assertActiveSpeedTier(speedId: number) {
   const db = getDb();
@@ -316,17 +317,34 @@ export async function importUsernamesFromExcel(rows: ParsedImportRow[], speedId:
 /** Reset billing month on an assigned username (same user, new invoice). */
 export async function resetUsernameBillingCycle(usernameId: number, createdBy: number) {
   const db = getDb();
-  const [sub] = await db
-    .select({ id: subscribers.id })
-    .from(subscribers)
-    .where(eq(subscribers.usernameID, usernameId))
+  const [assigned] = await db
+    .select({
+      subscriberId: subscribers.id,
+      isOwnerUsername: availableUsernames.isOwnerUsername,
+      isUsed: availableUsernames.isUsed,
+      speedValue: speedTiers.speedValue,
+    })
+    .from(availableUsernames)
+    .innerJoin(subscribers, eq(subscribers.usernameID, availableUsernames.id))
+    .innerJoin(speedTiers, eq(speedTiers.id, availableUsernames.speedId))
+    .where(eq(availableUsernames.id, usernameId))
     .limit(1);
 
-  if (!sub) {
+  if (!assigned) {
     throw new AppError("This username is not assigned to a subscriber", 400);
   }
 
-  await renewUsernameBillingCycle(sub.id, createdBy, "Billing cycle reset");
+  if (!assigned.isUsed) {
+    throw new AppError("Billing cycle reset applies only to assigned usernames", 400);
+  }
+
+  const canRenewSameUsername =
+    assigned.isOwnerUsername || supportsSameUsernameRenewalSpeed(assigned.speedValue);
+  if (!canRenewSameUsername) {
+    throw new AppError("This speed does not support renewing the same username", 400);
+  }
+
+  await renewUsernameBillingCycle(assigned.subscriberId, createdBy, "Billing cycle reset");
 
   const [row] = await db
     .select()

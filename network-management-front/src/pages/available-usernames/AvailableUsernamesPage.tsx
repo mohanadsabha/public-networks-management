@@ -80,12 +80,23 @@ export function AvailableUsernamesPage() {
   const selectedTier =
     speedTiers.find((tier) => tier.id === activeSpeedId) ?? speedTiers[0];
 
-  const poolRows = useMemo(
-    () => rows.filter((row) => isInAvailablePool(row)),
-    [rows],
+  const poolListOptions = useMemo(
+    () =>
+      selectedTier
+        ? { speedMbps: selectedTier.valueMbps, includeAssignedRenewal: true as const }
+        : undefined,
+    [selectedTier],
   );
 
-  const poolCounts = useMemo(() => getSpeedPoolCounts(rows, activeSpeedId), [rows, activeSpeedId]);
+  const poolRows = useMemo(
+    () => rows.filter((row) => isInAvailablePool(row, new Date(), poolListOptions)),
+    [rows, poolListOptions],
+  );
+
+  const poolCounts = useMemo(
+    () => getSpeedPoolCounts(rows, activeSpeedId, selectedTier?.valueMbps),
+    [rows, activeSpeedId, selectedTier?.valueMbps],
+  );
 
   const filteredRows = useMemo(() => {
     if (statusFilter === "all") return poolRows;
